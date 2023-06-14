@@ -1,12 +1,12 @@
-const token = "6142606509:AAEFxS4Fvwgnvy2QEVWS8lPYuwYmlv1ZiqQ";
+const token = process.env.TOKEN;
 const moment = require("moment");
 
 const { MongoClient } = require("mongodb");
 const TelegramApi = require("node-telegram-bot-api");
 
-const mongoUrl =
-  "mongodb+srv://cavliucserv:JZcO7udBUJP2xPxs@bot.idah9gg.mongodb.net";
-const dbName = "schedule";
+const mongoUrl = process.env.MONGO_URL;
+
+const dbName = process.env.DB_NAME;
 
 const client = new MongoClient(mongoUrl);
 const bot = new TelegramApi(token, { polling: true });
@@ -102,41 +102,46 @@ const getUser = async () => {
   }
 };
 
-// let brotherList;
+let brotherList;
 
-// getUser().then((res) => {
-//   brotherList = res;
-// });
+getUser().then((res) => {
+  brotherList = res;
+});
 // Inline keyboard options for brother selection
-const brotherList = [
-  {
-    callback_data: "@cavliman",
-    text: "Cavliuc Igor",
-    role: "Распорядитель, Микрофон",
-  },
-  { callback_data: "@bellylollipop", text: "Radionov Igor", role: "Микрофон" },
-  {
-    callback_data: "@your_pixel",
-    text: "Fleanku Yaroslav",
-    role: "Аппаратура, Микрофон",
-  },
-  {
-    callback_data: "@rosin_rusanovschi",
-    text: "Rusanivsci Rosin",
-    role: "Распорядитель, Микрофон, Аппаратура",
-  },
-];
+// const brotherList = [
+//   {
+//     callback_data: "@cavliman",
+//     text: "Cavliuc Igor",
+//     role: "Распорядитель, Микрофон",
+//   },
+//   { callback_data: "@bellylollipop", text: "Radionov Igor", role: "Микрофон" },
+//   {
+//     callback_data: "@your_pixel",
+//     text: "Fleanku Yaroslav",
+//     role: "Аппаратура, Микрофон",
+//   },
+//   {
+//     callback_data: "@rosin_rusanovschi",
+//     text: "Rusanivsci Rosin",
+//     role: "Распорядитель, Микрофон, Аппаратура",
+//   },
+// ];
 
 // Inline keyboard options for brother selection
-const brotherOptions = {
-  reply_markup: JSON.stringify({
-    inline_keyboard: brotherList.map((brother) => [
-      { callback_data: brother.callback_data, text: brother.text },
-    ]),
-  }),
+const getBrotherOptions = () => {
+  return {
+    reply_markup: JSON.stringify({
+      inline_keyboard: brotherList.map((brother) => [
+        {
+          callback_data: brother.name,
+          text: brother.nickname,
+          role: brother.role,
+        },
+      ]),
+    }),
+  };
 };
 
-console.log(brotherOptions);
 // Function to handle the "/add" command
 const handleAddCommand = (chatId) => {
   const task = { chatId };
@@ -185,6 +190,8 @@ const handleAddCommand = (chatId) => {
       step = 0;
       return;
     }
+
+    console.log("brotherOptions", brotherOptions);
 
     const currentStep = steps[step];
     if (currentStep.text === "Выбери дату:") {
@@ -272,11 +279,12 @@ const handleAddBroCommand = (chatId) => {
 
   const userAddStep = () => {
     if (step >= steps.length) {
-      console.log(user);
-      addUser(user);
-      // Add logic to save the user to the database or perform any other desired action
-      bot.sendMessage(chatId, "Брат успешно добавлен в список.");
-      return;
+      if (user.name && user.nickname && user.role) {
+        getUser(user);
+        // Add logic to save the user to the database or perform any other desired action
+        bot.sendMessage(chatId, "Брат успешно добавлен в список.");
+        return;
+      }
     }
 
     const currentStep = steps[step];
@@ -323,8 +331,9 @@ bot.onText(/\/\w+/, (msg) => {
       );
       break;
     case "/listbrothers":
-      const brothers = brotherlist
-        .map((item) => `${item.text} (${item.role})`)
+      console.log(brotherList);
+      const brothers = brotherList
+        ?.map((item) => `${item.name} ${item.role}`)
         .join("\n");
       bot.sendMessage(chatId, `Вот список всех братьев:\n${brothers}`);
       break;
