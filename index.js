@@ -1,25 +1,25 @@
 const { Telegraf } = require("telegraf");
 
-const bot = new Telegraf("6111431374:AAHSRoUJvAjWoNvCoZBtJPw0rKDSr4_pW3o");
+const index = new Telegraf("6111431374:AAHSRoUJvAjWoNvCoZBtJPw0rKDSr4_pW3o");
 
 const handleAddCommand = require('./comands.js')
 
-bot.start((ctx) => {
+index.start((ctx) => {
   ctx.reply(`Добро пожаловать, брат ${ctx.from.first_name}`);
 });
 
-bot.help((ctx) => {
+index.help((ctx) => {
   ctx.reply(`Брат ${ctx.from.first_name}, эта группа была создана для теста. В будущем она будет помогать братьям организовывать важные части встреч, собрания и других мероприятий.`);
 });
 
-bot.command("addTask", (ctx) => {
+index.command("addTask", (ctx) => {
 
-    handleAddCommand(bot,ctx)
+    handleAddCommand(index,ctx)
 
     console.log(ctx)
 });
 
-bot.launch().then(() => {
+index.launch().then(() => {
   console.log("Bot started");
 });
 
