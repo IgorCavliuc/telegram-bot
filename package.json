@@ -2,10 +2,10 @@
   "name": "telegram-bor-helper",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "bot.js",
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node  index.js"
+    "dev": "nodemon bot.js",
+    "start": "nodemon  bot.js"
   },
   "author": "",
   "license": "ISC",

@@ -4,7 +4,7 @@ const url =
     "mongodb+srv://cavliucserv:Te9MhRzgLZ2ZvYK3@bot.idah9gg.mongodb.net/?retryWrites=true&w=majority";
 const dbName = "schedule";
 
-let db;
+let bot;
 let client; // Add this line to store the MongoDB client
 
 const connectToDb = async () => {
@@ -14,7 +14,7 @@ const connectToDb = async () => {
     await client.connect();
 
     // Access the database
-    db = client.db(dbName);
+    bot = client.db(dbName);
     console.log("Connected to the database");
   } catch (error) {
     console.error("Error connecting to the database:", error);
@@ -37,7 +37,7 @@ async function addTask(task) {
 }
 const addUser = async (user) => {
   try {
-    const collection = db.collection("user");
+    const collection = bot.collection("user");
     await collection.insertOne(user);
     console.log("user added:", user);
   } catch (error) {

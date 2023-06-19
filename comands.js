@@ -1,5 +1,5 @@
 const moment = require("moment");
-const { addTask, getUser } = require("./db.js");
+const { addTask, getUser } = require("./bot.js");
 const { Markup } = require('telegraf');
 
 function sendTaskConfirmation(ctx, task) {
