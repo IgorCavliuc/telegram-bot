@@ -1,70 +1,53 @@
-const { MongoClient } = require("mongodb");
+const { Telegraf, Markup } = require("telegraf");
 
-const url =
-    "mongodb+srv://cavliucserv:Te9MhRzgLZ2ZvYK3@bot.idah9gg.mongodb.net/?retryWrites=true&w=majority";
-const dbName = "schedule";
+const bot = new Telegraf("6111431374:AAHSRoUJvAjWoNvCoZBtJPw0rKDSr4_pW3o");
 
-let bot;
-let client; // Add this line to store the MongoDB client
+const {
+  handleAddCommand,
+  handleGetSchedule,
+  handleAddBroCommand,
+  handleGetBrother,
+} = require("./comands.js");
 
-const connectToDb = async () => {
-  client = new MongoClient(url);
-  try {
-    // Connect to the MongoDB server
-    await client.connect();
+const commands = [
+  { command: "/start", description: "Начальное приветствие." },
+  { command: "/help", description: "Информация о боте и его свойствах." },
+  {
+    command: "/list_brothers",
+    description: "Список братьев допущенных к обслуживанию.",
+  },
+  { command: "/addTask", description: "Добавление чего-то." },
+  { command: "/addBro", description: "Добавление нового брата в список." },
+  {
+    command: "/list_schedule",
+    description: "Получить весь список на месяц.",
+  },
+];
+bot.start((ctx) => {
+  ctx.reply(`Добро пожаловать, брат ${ctx.from.first_name}`);
+});
 
-    // Access the database
-    bot = client.db(dbName);
-    console.log("Connected to the database");
-  } catch (error) {
-    console.error("Error connecting to the database:", error);
-  }
-};
+bot.help((ctx) => {
+  ctx.reply(
+    `Брат ${ctx.from.first_name}, эта группа была создана для теста. В будущем она будет помогать братьям организовывать важные части встреч, собрания и других мероприятий.`
+  );
+});
 
-async function addTask(task) {
-  const client = new MongoClient(url);
+bot.command("add_task", (ctx) => {
+  handleAddCommand(bot, ctx);
+});
 
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection('scheduleJw');
+bot.command("add_bro", (ctx) => {
+  handleAddBroCommand(bot, ctx);
+});
+bot.command("list_schedule", (ctx) => {
+  handleGetSchedule(bot, ctx);
+});
+bot.command("list_brothers", (ctx) => {
+  handleGetBrother(bot, ctx);
+});
 
-    await collection.insertOne(task);
-    return {app_code:'SUCCESS'};
-  } finally {
-    await client.close();
-  }
-}
-const addUser = async (user) => {
-  try {
-    const collection = bot.collection("user");
-    await collection.insertOne(user);
-    console.log("user added:", user);
-  } catch (error) {
-    console.log("Error adding user:", error);
-  }
-};
-const getUser = async () => {
-  let client; // Declare the client variable within the function scope
-
-  try {
-    client = new MongoClient(url); // Initialize the MongoDB client
-    await client.connect(); // Connect to the MongoDB server
-
-    const db = client.db(dbName); // Access the database
-    const collection = db.collection("user");
-    const userList = await collection.find().toArray();
-    return userList;
-  } catch (error) {
-    console.log("Error retrieving user:", error);
-    return [];
-  } finally {
-    if (client) {
-      await client.close(); // Close the client connection
-    }
-  }
-};
-
-// Add other database operations (getUser, addUser, getSchedule) here...
-
-module.exports = { connectToDb, addTask,  addUser, getUser,/* getSchedule */ };
+bot.launch().then(() => {
+  console.log("Bot started");
+  bot.telegram.setMyCommands(commands);
+});

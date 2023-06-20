@@ -1,6 +1,6 @@
 const moment = require("moment");
-const { addTask, getUser } = require("./bot.js");
-const { Markup } = require('telegraf');
+const { addTask, getUser, addUser, getSchedule } = require("./db.js");
+const { Markup } = require("telegraf");
 
 function sendTaskConfirmation(ctx, task) {
   const message = `Привет всем!
@@ -8,9 +8,7 @@ function sendTaskConfirmation(ctx, task) {
   Пульт: ${task.voice_acting}
   Микрофон 1: ${task.first_microphone}
   Микрофон 2: ${task.second_microphone}
-  Распорядитель Зал: ${task.steward_hall}
-
-  Если у тебя нет возможности послужить, прошу, предупреди об этом заранее!`;
+  Распорядитель Зал: ${task.steward_hall}`;
 
   ctx.reply(message);
 }
@@ -33,43 +31,13 @@ const generateMondayDates = () => {
 
 const dateOptions = Markup.inlineKeyboard(generateMondayDates());
 
-let brotherList = [];
-
-async function fetchBrotherList() {
-  brotherList = await getUser();
-}
-
-fetchBrotherList();
-
-
-const getBrotherOptions = () => {
-  if (!brotherList || brotherList.length === 0) {
-    return {
-      reply_markup: JSON.stringify({
-        inline_keyboard: [],
-      }),
-    };
-  }
-
-  return {
-    reply_markup: JSON.stringify({
-      inline_keyboard: brotherList.map((brother) => [
-        {
-          text: brother.name,
-          callback_data: brother.nickname,
-        },
-      ]),
-    }),
-  };
-};
-
 const validateTask = (task) => {
   if (
-      task.date &&
-      task.voice_acting &&
-      task.first_microphone &&
-      task.second_microphone &&
-      task.steward_hall
+    task.date &&
+    task.voice_acting &&
+    task.first_microphone &&
+    task.second_microphone &&
+    task.steward_hall
   ) {
     return true; // Все поля заполнены
   } else {
@@ -77,7 +45,40 @@ const validateTask = (task) => {
   }
 };
 
-const handleAddCommand = (bot, ctx) => {
+const validateUser = (user) => {
+  if (user.name && user.nickname && user.role) {
+    return true; // Все поля заполнены
+  } else {
+    return false; // Не все поля заполнены
+  }
+};
+
+const handleAddCommand = async (bot, ctx) => {
+  let brotherList = [];
+
+  brotherList = await getUser();
+
+  const getBrotherOptions = () => {
+    if (!brotherList || brotherList.length === 0) {
+      return {
+        reply_markup: JSON.stringify({
+          inline_keyboard: [],
+        }),
+      };
+    }
+
+    return {
+      reply_markup: JSON.stringify({
+        inline_keyboard: brotherList.map((brother) => [
+          {
+            text: brother.name,
+            callback_data: brother.nickname,
+          },
+        ]),
+      }),
+    };
+  };
+
   const steps = [
     "Выбери дату:",
     "Выбери брата для службы в озвучке:",
@@ -97,7 +98,14 @@ const handleAddCommand = (bot, ctx) => {
             sendTaskConfirmation(ctx, task);
           }
         });
-        resetTask();
+        task = {
+          date: undefined,
+          voice_acting: undefined,
+          first_microphone: undefined,
+          second_microphone: undefined,
+          steward_hall: undefined,
+        };
+        step = 0;
         step = 0;
         return;
       }
@@ -143,17 +151,6 @@ const handleAddCommand = (bot, ctx) => {
     }
   };
 
-  const resetTask = () => {
-    task = {
-      date: undefined,
-      voice_acting: undefined,
-      first_microphone: undefined,
-      second_microphone: undefined,
-      steward_hall: undefined,
-    };
-    step = 0;
-  };
-
   const removeCallbackQueryHandler = () => {
     bot.off("callback_query", handleCallbackQuery);
   };
@@ -164,4 +161,132 @@ const handleAddCommand = (bot, ctx) => {
   processStep(ctx);
 };
 
-module.exports = handleAddCommand;
+const handleAddBroCommand = (bot, ctx) => {
+  const steps = [
+    "Напиши имя и фамилию брата, которого хочешь добавить:",
+    "Напиши телеграм-ник брата, используя вначале символ @, которого хочешь добавить:",
+    "Напиши его возможности (в скобках):",
+  ];
+
+  let step = 0;
+  let user = {};
+
+  const processStep = async (ctx) => {
+    if (step === steps.length) {
+      if (validateUser(user)) {
+        await addUser(user).then((res) => {
+          if (res.app_code === "SUCCESS") {
+            ctx.reply(
+              `Брат ${user.name} был добавлен в общий сипсок братьев доступных для помощи в зале царства`
+            );
+          }
+        });
+        user = {};
+        step = 0;
+        return;
+      }
+    }
+
+    const currentStep = steps[step];
+    ctx.reply(currentStep);
+    step++;
+  };
+
+  const handleMessage = (ctx) => {
+    const answer = ctx.message.text;
+
+    const currentStep = steps[step - 1];
+
+    switch (currentStep) {
+      case "Напиши имя и фамилию брата, которого хочешь добавить:":
+        user.name = answer;
+        break;
+      case "Напиши телеграм-ник брата, используя вначале символ @, которого хочешь добавить:":
+        user.nickname = answer;
+        break;
+      case "Напиши его возможности (в скобках):":
+        user.role = answer;
+        break;
+      default:
+        break;
+    }
+
+    processStep(ctx);
+  };
+
+  bot.on("message", handleMessage);
+
+  processStep(ctx);
+};
+const handleGetSchedule = async (bot, ctx) => {
+  try {
+    const scheduleList = await getSchedule();
+
+    if (scheduleList.length === 0) {
+      ctx.reply("No schedule data found.");
+    } else {
+      let scheduleText = "Расписание на месяц:\n";
+      for (const task of scheduleList) {
+        scheduleText += `Неделя от: ${task.date}\n`;
+        scheduleText += `Озвучка / пульт: ${task.voice_acting}\n`;
+        scheduleText += `Микрофон 1: ${task.first_microphone}\n`;
+        scheduleText += `Микрофон 2: ${task.second_microphone}\n`;
+        scheduleText += `Распорядитель Зал: ${task.steward_hall}\n\n`;
+      }
+      ctx.reply(scheduleText);
+    }
+  } catch (error) {
+    console.log("Error retrieving schedule:", error);
+    ctx.reply("An error occurred while retrieving the schedule.");
+  }
+};
+const handleGetBrother = async (bot, ctx) => {
+  try {
+    const userList = await getUser();
+
+    console.log(userList);
+
+    if (userList.length === 0) {
+      ctx.reply("No schedule data found.");
+    } else {
+      let userText = "Список всех братьев\n(Фамилия Имя: его возможности):\n";
+      for (const user of userList) {
+        userText += `${user.name}: ${user.role}\n`;
+      }
+      ctx.reply(userText);
+    }
+  } catch (error) {
+    console.log("Error retrieving schedule:", error);
+    ctx.reply("An error occurred while retrieving the schedule.");
+  }
+
+  // try {
+  //   const brotherList = await getUser();
+
+  //   if (brotherList.length === 0) {
+  //     ctx.reply("No schedule data found.");
+  //   } else {
+  //     let userText = "";
+  //     for (const brother of brotherList) {
+  //       userText += `Вот список всех братьев:\n${brother}`;
+  //     }
+  //     ctx.reply(userText);
+  //     console.log(userText);
+  //   }
+  // } catch (error) {
+  //   console.log("Error retrieving brother list:", error);
+  //   // ctx.reply("An error occurred while retrieving the brother list.");
+  //   // ctx.reply("An error occurred while retrieving the brother list.");
+  // }
+};
+
+// bot.launch().then(() => {
+//   console.log("Bot started");
+// });
+
+module.exports = {
+  handleGetSchedule,
+  handleAddCommand,
+  handleAddBroCommand,
+  handleGetBrother,
+};
