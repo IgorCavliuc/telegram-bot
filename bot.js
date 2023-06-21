@@ -1,6 +1,8 @@
+require("dotenv").config();
 const { Telegraf, Markup } = require("telegraf");
+const token = process.env.BOOT_URL_TOKEN;
 
-const bot = new Telegraf("6111431374:AAHSRoUJvAjWoNvCoZBtJPw0rKDSr4_pW3o");
+const bot = new Telegraf(token);
 
 const {
   handleAddCommand,

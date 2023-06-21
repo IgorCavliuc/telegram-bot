@@ -1,13 +1,14 @@
+require("dotenv").config();
 const { MongoClient } = require("mongodb");
 
-const url =
-  "mongodb+srv://cavliucserv:Te9MhRzgLZ2ZvYK3@bot.idah9gg.mongodb.net/?retryWrites=true&w=majority";
+const url = process.env.BOOT_URL_MONGODB;
 const dbName = "schedule";
 
 let db;
 let client; // Add this line to store the MongoDB client
 
 const connectToDb = async () => {
+  console.log("43urgeifudsfsdhuf", url);
   client = new MongoClient(url);
   try {
     // Connect to the MongoDB server
