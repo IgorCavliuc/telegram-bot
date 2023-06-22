@@ -5,7 +5,7 @@ const url = process.env.BOOT_URL_MONGODB;
 const dbName = "schedule";
 
 let db;
-let client; // Add this line to store the MongoDB client
+let client;
 
 const connectToDb = async () => {
   console.log("43urgeifudsfsdhuf", url);
