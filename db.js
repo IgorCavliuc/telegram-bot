@@ -11,10 +11,7 @@ const connectToDb = async () => {
   console.log("43urgeifudsfsdhuf", url);
   client = new MongoClient(url);
   try {
-    // Connect to the MongoDB server
     await client.connect();
-
-    // Access the database
     db = client.db(dbName);
     console.log("Connected to the database");
   } catch (error) {
@@ -76,7 +73,5 @@ async function getUser() {
     return [];
   }
 }
-
-// Add other database operations (getUser, addUser, getSchedule) here...
 
 module.exports = { connectToDb, addTask, addUser, getUser, getSchedule };
