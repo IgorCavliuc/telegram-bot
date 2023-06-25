@@ -8,7 +8,6 @@ let db;
 let client;
 
 const connectToDb = async () => {
-  console.log("43urgeifudsfsdhuf", url);
   client = new MongoClient(url);
   try {
     await client.connect();
@@ -60,6 +59,24 @@ const addUser = async (user) => {
     await client.close();
   }
 };
+
+const updateUser = async (nickname, user_id) => {
+  const client = new MongoClient(url);
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+    const collection = db.collection("user");
+
+    await collection.updateOne(
+      { nickname: nickname },
+      { $set: { user_id: user_id } }
+    );
+    return { app_code: "SUCCESS" };
+  } finally {
+    await client.close();
+  }
+};
+
 async function getUser() {
   const client = new MongoClient(url);
   try {
@@ -74,4 +91,11 @@ async function getUser() {
   }
 }
 
-module.exports = { connectToDb, addTask, addUser, getUser, getSchedule };
+module.exports = {
+  connectToDb,
+  addTask,
+  addUser,
+  getUser,
+  getSchedule,
+  updateUser,
+};

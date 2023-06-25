@@ -1,9 +1,10 @@
 const moment = require("moment");
 const { addTask, getUser, addUser, getSchedule } = require("./db.js");
 const { Markup } = require("telegraf");
+const schedule = require("node-schedule");
 
 function sendTaskConfirmation(ctx, task) {
-  const message = `Привет всем!
+  const message = `Запись была внесена в список запланированных задач!
   На неделе от ${task.date} на встрече распорядителями послужат:
   Пульт: ${task.voice_acting}
   Микрофон 1: ${task.first_microphone}
@@ -46,12 +47,50 @@ const validateTask = (task) => {
 };
 
 const validateUser = (user) => {
-  if (user.name && user.nickname && user.role) {
+  if (
+    (user.name && user.nickname) ||
+    user.admin ||
+    user.microphone ||
+    user.voice_acting ||
+    user.manager
+  ) {
     return true; // Все поля заполнены
   } else {
     return false; // Не все поля заполнены
   }
 };
+
+function handleStartCommand(bot, ctx, root, firstName) {
+  root.auth
+    ? ctx.reply(`Добро пожаловать, брат ${ctx.from.first_name}`)
+    : ctx.reply(
+        `${firstName},  у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
+      );
+}
+
+function handleHelpCommand(bot, ctx, root, firstName) {
+  root.auth
+    ? ctx.reply(
+        `Брат ${ctx.from.first_name}, эта группа была создана для облегчения организации руботы в службе озвучиания, службы с микрофоном и в службе распорядителей. Телеграм бот сможет создавать график слуюбы, добавлять новых братьев в общий список и давать им разные возможности, доступные в собрании а так же можно  смотреть список всех братьев и общий график. И что важнее всего он имеет функию заблаговременого напоминания о том где, кто и когда учавтвует в той или иной службе.`
+      )
+    : ctx.reply(
+        `${firstName}, обратись пожалуйста к назначеному брату для инфоормациии и получения доступа`
+      );
+}
+function handleAddCommandAdmin(bot, ctx, root, firstName) {
+  root.admin
+    ? handleAddCommand(bot, ctx)
+    : ctx.reply(
+        `Брат ${firstName}, у тебя нет доступа к этой команде, если ты хочешь добавить/изменить/удалить график, пожалуйста обратись к назначеному брату`
+      );
+}
+function handleAddBroCommandAdmin(bot, ctx, root, firstName) {
+  root.admin
+    ? handleAddBroCommand(bot, ctx)
+    : ctx.reply(
+        `Брат ${firstName}, у тебя нет доступа к этой команде, если ты хочешь добавить/изменить/удалить данные о брате, пожалуйста обратись к назначеному брату`
+      );
+}
 
 const handleAddCommand = async (bot, ctx) => {
   let brotherList = [];
@@ -78,6 +117,9 @@ const handleAddCommand = async (bot, ctx) => {
       }),
     };
   };
+  const filteredUsers = brotherList
+    .filter((user) => typeof user.user_id === "number")
+    .map((id) => id.user_id);
 
   const steps = [
     "Выбери дату:",
@@ -96,16 +138,62 @@ const handleAddCommand = async (bot, ctx) => {
         await addTask(task).then((res) => {
           if (res.app_code === "SUCCESS") {
             sendTaskConfirmation(ctx, task);
+            // const rule = new schedule.RecurrenceRule();
+            // rule.dayOfWeek = [1, 5];
+            // rule.hour = 10;
+            // rule.minute = 0;
+
+            // const inputDate = `${task?.date} 10:00`;
+            const inputDate = `25.06.2023 13:15`;
+            const parts = inputDate.split(" ");
+            const dateParts = parts[0].split(".");
+            const timeParts = parts[1].split(":");
+            const formattedDate = new Date(
+              dateParts[2],
+              dateParts[1] - 1,
+              dateParts[0],
+              timeParts[0],
+              timeParts[1]
+            );
+
+            const nextDate = new Date(formattedDate);
+            nextDate.setMinutes(nextDate.getDate() + 4);
+
+            function sendToAllUsers(message) {
+              filteredUsers.forEach((userId) => {
+                schedule.scheduleJob(formattedDate, () => {
+                  bot.telegram
+                    .sendMessage(userId, message)
+                    .then(() => {
+                      console.log(`Message sent to user ${userId}`);
+                    })
+                    .catch((error) => {
+                      console.error(
+                        `Error sending message to user ${userId}:`,
+                        error
+                      );
+                    });
+                });
+              });
+            }
+            const message = `Привет всем!
+            На неделе от ${task.date} на встрече собрания, распорядителями послужат:
+            Пульт: ${task.voice_acting}
+            Микрофон 1: ${task.first_microphone}
+            Микрофон 2: ${task.second_microphone}
+            Распорядитель Зал: ${task.steward_hall}
+            Если у тебя нет возможности послужить, прошу, предупреди об этом заранее!`;
+            sendToAllUsers(message);
+
+            // schedule.scheduleJob(formattedDate, () => {
+            //   sendScheduleTaskConfirmation(ctx, task);
+            // });
+
+            // schedule.scheduleJob(nextDate, () => {
+            //   sendScheduleTaskConfirmation(ctx, task);
+            // });
           }
         });
-        task = {
-          date: undefined,
-          voice_acting: undefined,
-          first_microphone: undefined,
-          second_microphone: undefined,
-          steward_hall: undefined,
-        };
-        step = 0;
         step = 0;
         return;
       }
@@ -165,37 +253,72 @@ const handleAddBroCommand = (bot, ctx) => {
   const steps = [
     "Напиши имя и фамилию брата, которого хочешь добавить:",
     "Напиши телеграм-ник брата, используя вначале символ @, которого хочешь добавить:",
-    "Напиши его возможности (в скобках):",
+    "Является ли этот брат Администратором и может ли он добавлять/изменять/удалять график?",
+    "Может ли этот брат служить с микрофоном?",
+    "Может ли этот брат служить в службе озвучивания?",
+    "Может ли этот брат служить в службе распорядителей?",
   ];
 
   let step = 0;
   let user = {};
 
-  const processStep = async (ctx) => {
-    if (step === steps.length) {
+  const TrueFalse = () => ({
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "ДА",
+            callback_data: "true",
+          },
+          {
+            text: "НЕТ",
+            callback_data: "false",
+          },
+        ],
+      ],
+    },
+  });
+
+  const processStep = async () => {
+    if (step >= steps.length) {
       if (validateUser(user)) {
-        await addUser(user).then((res) => {
-          if (res.app_code === "SUCCESS") {
-            ctx.reply(
-              `Брат ${user.name} был добавлен в общий сипсок братьев доступных для помощи в зале царства`
-            );
-          }
-        });
-        user = {};
-        step = 0;
-        return;
+        const res = await addUser(user);
+        if (res.app_code === "SUCCESS") {
+          ctx.reply(
+            `Брат ${user.name} был добавлен в общий список братьев, доступных для помощи в зале царства`
+          );
+        }
       }
+
+      user = {};
+      step = 0;
+      return;
     }
 
     const currentStep = steps[step];
-    ctx.reply(currentStep);
-    step++;
+
+    if (currentStep && currentStep.trim() !== "") {
+      if (
+        [
+          `Является ли этот брат Администратором и может ли он добавлять/изменять/удалять график?`,
+          `Может ли этот брат служить с микрофоном?`,
+          `Может ли этот брат служить в службе озвучивания?`,
+          `Может ли этот брат служить в службе распорядителей?`,
+        ].includes(currentStep)
+      ) {
+        ctx.reply(currentStep, TrueFalse());
+      } else {
+        ctx.reply(currentStep);
+      }
+    }
+
+    return;
   };
 
   const handleMessage = (ctx) => {
     const answer = ctx.message.text;
 
-    const currentStep = steps[step - 1];
+    const currentStep = steps[step];
 
     switch (currentStep) {
       case "Напиши имя и фамилию брата, которого хочешь добавить:":
@@ -203,27 +326,64 @@ const handleAddBroCommand = (bot, ctx) => {
         break;
       case "Напиши телеграм-ник брата, используя вначале символ @, которого хочешь добавить:":
         user.nickname = answer;
+        user.user_id = getUserIdByUsername(answer);
         break;
-      case "Напиши его возможности (в скобках):":
-        user.role = answer;
+      // case "Является ли этот брат Администратором и может ли он добавлять/изменять/удалять график?":
+      //   user.admin = answerBoolean;
+      //   break;
+      // case "Может ли этот брат служить с микрофоном?":
+      //   user.microphone = answerBoolean;
+      //   break;
+      // case "Может ли этот брат служить в службе озвучивания?":
+      //   user.voice_acting = answerBoolean;
+      //   break;
+      // case "Может ли этот брат служить в службе распорядителей?":
+      //   user.manager = answerBoolean;
+      //   break;
+      default:
+        break;
+    }
+
+    step++;
+    processStep();
+  };
+
+  bot.on("message", handleMessage);
+
+  bot.action(["true", "false"], (ctx) => {
+    const currentStep = steps[step];
+    const answerBoolean = ctx.callbackQuery.data === "true";
+
+    switch (currentStep) {
+      case "Является ли этот брат Администратором и может ли он добавлять/изменять/удалять график?":
+        user.admin = answerBoolean;
+        break;
+      case "Может ли этот брат служить с микрофоном?":
+        user.microphone = answerBoolean;
+        break;
+      case "Может ли этот брат служить в службе озвучивания?":
+        user.voice_acting = answerBoolean;
+        break;
+      case "Может ли этот брат служить в службе распорядителей?":
+        user.manager = answerBoolean;
         break;
       default:
         break;
     }
 
-    processStep(ctx);
-  };
+    step++;
+    processStep();
+  });
 
-  bot.on("message", handleMessage);
-
-  processStep(ctx);
+  processStep();
 };
+
 const handleGetSchedule = async (bot, ctx) => {
   try {
     const scheduleList = await getSchedule();
 
     if (scheduleList.length === 0) {
-      ctx.reply("No schedule data found.");
+      ctx.reply("График пока пуст.");
     } else {
       let scheduleText = "Расписание на месяц:\n";
       for (const task of scheduleList) {
@@ -244,14 +404,14 @@ const handleGetBrother = async (bot, ctx) => {
   try {
     const userList = await getUser();
 
-    console.log(userList);
-
     if (userList.length === 0) {
-      ctx.reply("No schedule data found.");
+      ctx.reply("Список братьев пуст.");
     } else {
       let userText = "Список всех братьев\n(Фамилия Имя: его возможности):\n";
       for (const user of userList) {
-        userText += `${user.name}: ${user.role}\n`;
+        userText += `${user.name}: (${user.microphone ? "Микрофон, " : ""}${
+          user.manager ? "Распорядитель, " : ""
+        }${user.voice_acting ? "Аппаратура" : ""})\n`;
       }
       ctx.reply(userText);
     }
@@ -289,4 +449,8 @@ module.exports = {
   handleAddCommand,
   handleAddBroCommand,
   handleGetBrother,
+  handleStartCommand,
+  handleHelpCommand,
+  handleAddCommandAdmin,
+  handleAddBroCommandAdmin,
 };

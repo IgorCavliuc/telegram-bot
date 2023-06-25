@@ -9,7 +9,17 @@ const {
   handleGetSchedule,
   handleAddBroCommand,
   handleGetBrother,
+  handleStartCommand,
+  handleHelpCommand,
+  handleAddCommandAdmin,
+  handleAddBroCommandAdmin,
 } = require("./comands.js");
+const { getUser, updateUser } = require("./db.js");
+
+let root = {
+  admin: false,
+  auth: false,
+};
 
 const commands = [
   { command: "/start", description: "Начальное приветствие." },
@@ -25,28 +35,63 @@ const commands = [
     description: "Получить весь список на месяц.",
   },
 ];
-bot.start((ctx) => {
-  ctx.reply(`Добро пожаловать, брат ${ctx.from.first_name}`);
+
+bot.start(async (ctx) => {
+  const userId = ctx.from?.id;
+  const userName = "@" + ctx.from?.username;
+  await updateUser(userName, userId);
+
+  const brotherList = await getUser();
+
+  const dataUser = brotherList.filter(
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
+  root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
+  root.auth
+    ? handleStartCommand(bot, ctx, root)
+    : handleStartCommand(bot, ctx, root, ctx.from.first_name);
+
+  // const users = brotherList.filter((user) => typeof user?.user_id === "number");
+
+  // Function to send a message to each user
 });
 
 bot.help((ctx) => {
-  ctx.reply(
-    `Брат ${ctx.from.first_name}, эта группа была создана для теста. В будущем она будет помогать братьям организовывать важные части встреч, собрания и других мероприятий.`
-  );
+  root.auth
+    ? handleHelpCommand(bot, ctx, root)
+    : handleHelpCommand(bot, ctx, root, ctx.from.first_name);
 });
 
 bot.command("add_task", (ctx) => {
+  // root?.admin
+  // ?
   handleAddCommand(bot, ctx);
+  // : ctx.reply(
+  //     `Брат ${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь добавить/изменить/удалить график, пожалуйста обратись к назначеному брату`
+  //   );
 });
 
 bot.command("add_bro", (ctx) => {
-  handleAddBroCommand(bot, ctx);
+  handleAddBroCommandAdmin(bot, ctx, root, ctx.from.first_name);
 });
 bot.command("list_schedule", (ctx) => {
-  handleGetSchedule(bot, ctx);
+  root?.auth
+    ? handleGetSchedule(bot, ctx)
+    : ctx.reply(
+        `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
+      );
 });
 bot.command("list_brothers", (ctx) => {
-  handleGetBrother(bot, ctx);
+  root?.auth
+    ? handleGetBrother(bot, ctx)
+    : ctx.reply(
+        `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
+      );
 });
 
 bot.launch().then(() => {
