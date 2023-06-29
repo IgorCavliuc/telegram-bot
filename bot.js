@@ -1,6 +1,10 @@
 require("dotenv").config();
-const express = require("express");
-const { Telegraf } = require("telegraf");
+const { Telegraf, Markup } = require("telegraf");
+const token = process.env.BOOT_URL_TOKEN;
+const webhookUrl = process.env.WEBHOOK_URL;
+
+const bot = new Telegraf(token);
+
 const {
   handleAddCommand,
   handleGetSchedule,
@@ -13,18 +17,19 @@ const {
 } = require("./comands.js");
 const { getUser, updateUser } = require("./db.js");
 
-const token = process.env.BOOT_URL_TOKEN;
-const bot = new Telegraf(token);
-
-const app = express();
-
-// Telegram webhook endpoint
-app.use(bot.webhookCallback("/webhook"));
-
 let root = {
   admin: false,
   auth: false,
 };
+
+async function setWebhook() {
+  try {
+    const result = await bot.telegram.setWebhook(webhookUrl);
+    console.log("Webhook was set successfully:", result);
+  } catch (error) {
+    console.error("Error setting up webhook:", error);
+  }
+}
 
 const commands = [
   { command: "/start", description: "Начальное приветствие." },
@@ -99,21 +104,7 @@ bot.command("list_brothers", (ctx) => {
       );
 });
 
-bot.telegram.setMyCommands(commands);
-
-// Start the bot
-bot.launch();
-
-// Set the webhook
-bot.telegram.setWebhook("https://telegram-bot-ashy-three.vercel.app");
-
-// Handle incoming updates via webhook
-app.post("/webhook", express.json(), (req, res) => {
-  bot.handleUpdate(req.body);
-  res.sendStatus(200);
-});
-
-// Start the express server
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
+bot.launch().then(() => {
+  console.log("Bot started");
+  setWebhook();
 });
