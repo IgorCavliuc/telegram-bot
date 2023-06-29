@@ -31,20 +31,20 @@ async function setWebhook() {
   }
 }
 
-const commands = [
-  { command: "/start", description: "Начальное приветствие." },
-  { command: "/help", description: "Информация о боте и его свойствах." },
-  {
-    command: "/list_brothers",
-    description: "Список братьев допущенных к обслуживанию.",
-  },
-  { command: "/add_task", description: "Добавление чего-то." },
-  { command: "/add_bro", description: "Добавление нового брата в список." },
-  {
-    command: "/list_schedule",
-    description: "Получить весь список на месяц.",
-  },
-];
+// const commands = [
+//   { command: "/start", description: "Начальное приветствие." },
+//   { command: "/help", description: "Информация о боте и его свойствах." },
+//   {
+//     command: "/list_brothers",
+//     description: "Список братьев допущенных к обслуживанию.",
+//   },
+//   { command: "/add_task", description: "Добавление чего-то." },
+//   { command: "/add_bro", description: "Добавление нового брата в список." },
+//   {
+//     command: "/list_schedule",
+//     description: "Получить весь список на месяц.",
+//   },
+// ];
 
 bot.start(async (ctx) => {
   const userId = ctx.from?.id;
