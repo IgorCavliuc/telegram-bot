@@ -38,8 +38,8 @@ const commands = [
     command: "/list_brothers",
     description: "Список братьев допущенных к обслуживанию.",
   },
-  { command: "/addTask", description: "Добавление чего-то." },
-  { command: "/addBro", description: "Добавление нового брата в список." },
+  { command: "/add_task", description: "Добавление чего-то." },
+  { command: "/add_bro", description: "Добавление нового брата в список." },
   {
     command: "/list_schedule",
     description: "Получить весь список на месяц.",
