@@ -4,8 +4,8 @@
   "description": "",
   "main": "bot.js",
   "scripts": {
-    "dev": "env-cmd -f .env nodemon bot.js",
-    "start": "env-cmd -f .env node bot.js"
+    "start": "env-cmd -f .env nodemon bot.js",
+    "dev": "env-cmd -f .env node bot.js"
   },
   "author": "",
   "license": "ISC",
