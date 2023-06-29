@@ -1,9 +1,6 @@
 require("dotenv").config();
-const { Telegraf, Markup } = require("telegraf");
-const token = process.env.BOOT_URL_TOKEN;
-
-const bot = new Telegraf(token);
-
+const express = require("express");
+const { Telegraf } = require("telegraf");
 const {
   handleAddCommand,
   handleGetSchedule,
@@ -15,6 +12,14 @@ const {
   handleAddBroCommandAdmin,
 } = require("./comands.js");
 const { getUser, updateUser } = require("./db.js");
+
+const token = process.env.BOOT_URL_TOKEN;
+const bot = new Telegraf(token);
+
+const app = express();
+
+// Telegram webhook endpoint
+app.use(bot.webhookCallback("/webhook"));
 
 let root = {
   admin: false,
@@ -94,7 +99,21 @@ bot.command("list_brothers", (ctx) => {
       );
 });
 
-bot.launch().then(() => {
-  console.log("Bot started");
-  bot.telegram.setMyCommands(commands);
+bot.telegram.setMyCommands(commands);
+
+// Start the bot
+bot.launch();
+
+// Set the webhook
+bot.telegram.setWebhook("https://telegram-bot-ashy-three.vercel.app");
+
+// Handle incoming updates via webhook
+app.post("/webhook", express.json(), (req, res) => {
+  bot.handleUpdate(req.body);
+  res.sendStatus(200);
+});
+
+// Start the express server
+app.listen(3000, () => {
+  console.log("Server is running on port 3000");
 });
