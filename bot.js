@@ -16,6 +16,32 @@ const token = process.env.TELEGRAN_BOT_TOKEN;
 
 const bot = new Telegraf(token);
 
+
+
+const express = require('express');
+const bodyParser = require('body-parser');
+
+const app = express();
+
+// Middleware для обработки JSON-тела запросов
+app.use(bodyParser.json());
+
+// Маршрут для обработки веб-хуков
+app.post(`/your-webhook-path`, (req, res) => {
+  bot.handleUpdate(req.body);
+  res.status(200).send('ok');
+});
+
+// Запуск Express.js сервера
+app.listen(process.env.PORT || 3000, () => {
+  console.log('Express server is listening...');
+});
+
+// Ваш код для обработки команд и взаимодействия с ботом
+
+
+
+
 const commands = [
   { command: "/start", description: "Начальное приветствие." },
   { command: "/help", description: "Информация о боте и его свойствах." },
