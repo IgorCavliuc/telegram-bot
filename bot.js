@@ -1,11 +1,5 @@
 require("dotenv").config();
 const { Telegraf } = require("telegraf");
-
-const token = process.env.TELEGRAN_BOT_TOKEN;
-const webhookUrl = process.env.WEBHOOK_URL;
-
-const bot = new Telegraf(token);
-
 const {
   handleAddCommand,
   handleGetSchedule,
@@ -18,10 +12,10 @@ const {
 } = require("./comands.js");
 const { getUser, updateUser } = require("./db.js");
 
-let root = {
-  admin: false,
-  auth: false,
-};
+const token = process.env.TELEGRAN_BOT_TOKEN;
+const webhookUrl = process.env.WEBHOOK_URL;
+
+const bot = new Telegraf(token);
 
 async function setWebhook() {
   try {
@@ -47,16 +41,15 @@ const commands = [
   },
 ];
 
-
 bot.start(async (ctx) => {
   const userId = ctx.from?.id;
   const userName = "@" + ctx.from?.username;
 
   const keyboard = {
     reply_markup: {
-      keyboard: commands.map(command => [{ text: command.command }]),
-      one_time_keyboard: true
-    }
+      keyboard: commands.map((command) => [{ text: command.command }]),
+      one_time_keyboard: true,
+    },
   };
 
   await updateUser(userName, userId);
@@ -67,20 +60,29 @@ bot.start(async (ctx) => {
       (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
 
-  root = {
+  const root = {
     auth: dataUser.length !== 0,
     admin: dataUser[0]?.admin,
   };
 
-  root.auth
-      ? handleStartCommand(bot, ctx, root)
-      : handleStartCommand(bot, ctx, root, ctx.from.first_name);
+  if (root.auth) {
+    handleStartCommand(bot, ctx, root);
+  } else {
+    handleStartCommand(bot, ctx, root, ctx.from.first_name);
+  }
 });
 
 bot.help((ctx) => {
-  root.auth
-      ? handleHelpCommand(bot, ctx, root)
-      : handleHelpCommand(bot, ctx, root, ctx.from.first_name);
+  const root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
+  if (root.auth) {
+    handleHelpCommand(bot, ctx, root);
+  } else {
+    handleHelpCommand(bot, ctx, root, ctx.from.first_name);
+  }
 });
 
 bot.command("add_task", (ctx) => {
@@ -88,23 +90,42 @@ bot.command("add_task", (ctx) => {
 });
 
 bot.command("add_bro", (ctx) => {
+  const root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
   handleAddBroCommandAdmin(bot, ctx, root, ctx.from.first_name);
 });
 
 bot.command("list_schedule", (ctx) => {
-  root?.auth
-      ? handleGetSchedule(bot, ctx)
-      : ctx.reply(
-          `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
-      );
+  const root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
+  if (root.auth) {
+    handleGetSchedule(bot, ctx);
+  } else {
+    ctx.reply(
+        `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
+    );
+  }
 });
 
 bot.command("list_brothers", (ctx) => {
-  root?.auth
-      ? handleGetBrother(bot, ctx)
-      : ctx.reply(
-          `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
-      );
+  const root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
+  if (root.auth) {
+    handleGetBrother(bot, ctx);
+  } else {
+    ctx.reply(
+        `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
+    );
+  }
 });
 
 bot.launch().then(() => {
