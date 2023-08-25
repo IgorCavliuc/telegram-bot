@@ -13,18 +13,8 @@ const {
 const { getUser, updateUser } = require("./db.js");
 
 const token = process.env.TELEGRAN_BOT_TOKEN;
-const webhookUrl = process.env.WEBHOOK_URL;
 
 const bot = new Telegraf(token);
-
-async function setWebhook() {
-  try {
-    const result = await bot.telegram.setWebhook(webhookUrl);
-    console.log("Webhook was set successfully:", result);
-  } catch (error) {
-    console.error("Error setting up webhook:", error);
-  }
-}
 
 const commands = [
   { command: "/start", description: "Начальное приветствие." },
@@ -73,6 +63,10 @@ bot.start(async (ctx) => {
 });
 
 bot.help((ctx) => {
+  const dataUser = brotherList.filter(
+      (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
   const root = {
     auth: dataUser.length !== 0,
     admin: dataUser[0]?.admin,
@@ -90,6 +84,10 @@ bot.command("add_task", (ctx) => {
 });
 
 bot.command("add_bro", (ctx) => {
+  const dataUser = brotherList.filter(
+      (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
   const root = {
     auth: dataUser.length !== 0,
     admin: dataUser[0]?.admin,
@@ -99,6 +97,10 @@ bot.command("add_bro", (ctx) => {
 });
 
 bot.command("list_schedule", (ctx) => {
+  const dataUser = brotherList.filter(
+      (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
   const root = {
     auth: dataUser.length !== 0,
     admin: dataUser[0]?.admin,
@@ -114,6 +116,10 @@ bot.command("list_schedule", (ctx) => {
 });
 
 bot.command("list_brothers", (ctx) => {
+  const dataUser = brotherList.filter(
+      (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
   const root = {
     auth: dataUser.length !== 0,
     admin: dataUser[0]?.admin,
@@ -130,5 +136,4 @@ bot.command("list_brothers", (ctx) => {
 
 bot.launch().then(() => {
   console.log("Bot started");
-  setWebhook();
 });
