@@ -1,6 +1,6 @@
 require("dotenv").config();
 const { Telegraf, Markup } = require("telegraf");
-const token = process.env.BOOT_URL_TOKEN;
+const token = process.env.TELEGRAN_BOT_TOKEN;
 const webhookUrl = process.env.WEBHOOK_URL;
 
 const bot = new Telegraf(token);
