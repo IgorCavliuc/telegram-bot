@@ -88,7 +88,9 @@ bot.start(async (ctx) => {
   }
 });
 
-bot.help((ctx) => {
+bot.help(async (ctx) => {
+  const brotherList = await getUser();
+
   const dataUser = brotherList.filter(
       (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
@@ -109,7 +111,9 @@ bot.command("add_task", (ctx) => {
   handleAddCommand(bot, ctx);
 });
 
-bot.command("add_bro", (ctx) => {
+bot.command("add_bro", async (ctx) => {
+  const brotherList = await getUser();
+
   const dataUser = brotherList.filter(
       (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
@@ -122,7 +126,9 @@ bot.command("add_bro", (ctx) => {
   handleAddBroCommandAdmin(bot, ctx, root, ctx.from.first_name);
 });
 
-bot.command("list_schedule", (ctx) => {
+bot.command("list_schedule", async (ctx) => {
+  const brotherList = await getUser();
+
   const dataUser = brotherList.filter(
       (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
@@ -141,7 +147,9 @@ bot.command("list_schedule", (ctx) => {
   }
 });
 
-bot.command("list_brothers", (ctx) => {
+bot.command("list_brothers", async (ctx) => {
+  const brotherList = await getUser();
+
   const dataUser = brotherList.filter(
       (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
