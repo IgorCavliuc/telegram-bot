@@ -6,7 +6,6 @@
   "scripts": {
     "start": "env-cmd -f .env node bot.js",
     "dev": "env-cmd -f .env nodemon  bot.js",
-    "dev-with-tunnel": "env-cmd -f .env vercel dev --tunnel"
 
   },
   "author": "",
