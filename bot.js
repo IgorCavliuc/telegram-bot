@@ -16,17 +16,12 @@ const token = process.env.TELEGRAN_BOT_TOKEN;
 
 const bot = new Telegraf(token);
 
-
-
 const express = require('express');
 const bodyParser = require('body-parser');
 
 const app = express();
 
-// Middleware для обработки JSON-тела запросов
 app.use(bodyParser.json());
-
-// Маршрут для обработки веб-хуков
 app.post(`/your-webhook-path`, (req, res) => {
   bot.handleUpdate(req.body);
   res.status(200).send('ok');
