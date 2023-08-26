@@ -5,10 +5,10 @@
   "main": "bot.js",
   "scripts": {
     "start": "env-cmd -f .env node bot.js",
-    "dev": "env-cmd -f .env nodemon bot.js",
+    "dev": "env-cmd -f .env nodemon  bot.js",
     "dev-with-tunnel": "env-cmd -f .env vercel dev --tunnel"
-  },
 
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -23,7 +23,6 @@
     "node-telegram-bot-api": "^0.53.0",
     "nodemon": "^2.0.15",
     "sqlite3": "^5.0.2",
-    "telebot": "^1.4.1",
     "telegraf": "^4.4.2"
   }
 }
