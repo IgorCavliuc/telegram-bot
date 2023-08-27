@@ -62,7 +62,9 @@ const validateUser = (user) => {
 
 function handleStartCommand(bot, ctx, root, firstName) {
   root.auth
-    ? ctx.reply(`Добро пожаловать, брат ${ctx.from.first_name}`)
+    ? ctx.reply(
+        `Добро пожаловать, брат ${ctx.from.first_name}, Вот ссылка для работы с графиком http://t.me/JWscheduleBot/JwScheduleBot`
+      )
     : ctx.reply(
         `${firstName},  у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
       );

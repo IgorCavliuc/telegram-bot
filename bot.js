@@ -16,26 +16,23 @@ const token = process.env.TELEGRAN_BOT_TOKEN;
 
 const bot = new Telegraf(token);
 
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const bodyParser = require("body-parser");
 
 const app = express();
 
 app.use(bodyParser.json());
 app.post(`/your-webhook-path`, (req, res) => {
   bot.handleUpdate(req.body);
-  res.status(200).send('ok');
+  res.status(200).send("ok");
 });
 
 // Запуск Express.js сервера
 app.listen(process.env.PORT || 3000, () => {
-  console.log('Express server is listening...');
+  console.log("Express server is listening...");
 });
 
 // Ваш код для обработки команд и взаимодействия с ботом
-
-
-
 
 const commands = [
   { command: "/start", description: "Начальное приветствие." },
@@ -68,7 +65,7 @@ bot.start(async (ctx) => {
   const brotherList = await getUser();
 
   const dataUser = brotherList.filter(
-      (bro) => bro.nickname.split("@")[1] === ctx.from.username
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
 
   const root = {
@@ -76,18 +73,16 @@ bot.start(async (ctx) => {
     admin: dataUser[0]?.admin,
   };
 
-  if (root.auth) {
-    handleStartCommand(bot, ctx, root);
-  } else {
-    handleStartCommand(bot, ctx, root, ctx.from.first_name);
-  }
+  ctx.reply(
+    `Привет ${ctx.from.first_name}! http://t.me/JWscheduleBot/JwScheduleBot`
+  );
 });
 
 bot.help(async (ctx) => {
   const brotherList = await getUser();
 
   const dataUser = brotherList.filter(
-      (bro) => bro.nickname.split("@")[1] === ctx.from.username
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
 
   const root = {
@@ -110,7 +105,7 @@ bot.command("add_bro", async (ctx) => {
   const brotherList = await getUser();
 
   const dataUser = brotherList.filter(
-      (bro) => bro.nickname.split("@")[1] === ctx.from.username
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
 
   const root = {
@@ -125,7 +120,7 @@ bot.command("list_schedule", async (ctx) => {
   const brotherList = await getUser();
 
   const dataUser = brotherList.filter(
-      (bro) => bro.nickname.split("@")[1] === ctx.from.username
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
 
   const root = {
@@ -137,7 +132,7 @@ bot.command("list_schedule", async (ctx) => {
     handleGetSchedule(bot, ctx);
   } else {
     ctx.reply(
-        `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
+      `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
     );
   }
 });
@@ -146,7 +141,7 @@ bot.command("list_brothers", async (ctx) => {
   const brotherList = await getUser();
 
   const dataUser = brotherList.filter(
-      (bro) => bro.nickname.split("@")[1] === ctx.from.username
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
 
   const root = {
@@ -158,7 +153,7 @@ bot.command("list_brothers", async (ctx) => {
     handleGetBrother(bot, ctx);
   } else {
     ctx.reply(
-        `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
+      `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
     );
   }
 });
