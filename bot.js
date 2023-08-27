@@ -22,9 +22,10 @@ const bodyParser = require("body-parser");
 const app = express();
 
 app.use(bodyParser.json());
-app.post(`/your-webhook-path`, (req, res) => {
-  bot.handleUpdate(req.body);
-  res.status(200).send("ok");
+
+app.post("/telegram-webhook", (req, res) => {
+  // Обработка запросов от Telegram бота
+  res.json({ message: "Received" });
 });
 
 // Запуск Express.js сервера
