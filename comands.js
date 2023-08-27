@@ -1,31 +1,4 @@
-const token = process.env.TOKEN;
 const moment = require("moment");
-
-const { MongoClient } = require("mongodb");
-const TelegramApi = require("node-telegram-bot-api");
-
-const mongoUrl = process.env.MONGO_URL;
-
-const dbName = process.env.DB_NAME;
-
-const client = new MongoClient(mongoUrl);
-const bot = new TelegramApi(token, { polling: true });
-
-// Command definitions
-const commands = [
-  { command: "/start", description: "Начальное приветствие." },
-  { command: "/info", description: "Информация о боте и его свойствах." },
-  {
-    command: "/listbrothers",
-    description: "Список братьев допущенных к обслуживанию.",
-  },
-  { command: "/add", description: "Добавление чего-то." },
-  { command: "/add_bro", description: "Добавление нового брата в список." },
-  {
-    command: "/list_schedule",
-    description: "Получить весь список на месяц.",
-  },
-];
 
 // const dateOptions = {
 //   reply_markup: JSON.stringify({
@@ -59,75 +32,12 @@ const dateOptions = {
   }),
 };
 
-// Function to add a task to the database
-const addTask = async (task) => {
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection("scheduleJw");
-    await collection.insertOne(task);
-  } catch (error) {
-    console.log("Error adding task:", error);
-  } finally {
-    await client.close();
-  }
-};
-const getSchedule = async () => {
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection("scheduleJw");
-    const scheduleList = await collection.find().toArray();
-    return scheduleList;
-  } catch (error) {
-    console.log("Error retrieving schedule:", error);
-    return [];
-  } finally {
-    await client.close();
-  }
-};
+let brotherList ;
 
-const getUser = async () => {
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection("user");
-    const scheduleList = await collection.find().toArray();
-    return scheduleList;
-  } catch (error) {
-    console.log("Error retrieving user:", error);
-    return [];
-  } finally {
-    await client.close();
-  }
-};
-
-let brotherList;
-
-getUser().then((res) => {
+addUser().then((res) => {
   brotherList = res;
 });
-// Inline keyboard options for brother selection
-// const brotherList = [
-//   {
-//     callback_data: "@cavliman",
-//     text: "Cavliuc Igor",
-//     role: "Распорядитель, Микрофон",
-//   },
-//   { callback_data: "@bellylollipop", text: "Radionov Igor", role: "Микрофон" },
-//   {
-//     callback_data: "@your_pixel",
-//     text: "Fleanku Yaroslav",
-//     role: "Аппаратура, Микрофон",
-//   },
-//   {
-//     callback_data: "@rosin_rusanovschi",
-//     text: "Rusanivsci Rosin",
-//     role: "Распорядитель, Микрофон, Аппаратура",
-//   },
-// ];
 
-// Inline keyboard options for brother selection
 const getBrotherOptions = () => {
   return {
     reply_markup: JSON.stringify({
@@ -141,8 +51,6 @@ const getBrotherOptions = () => {
     }),
   };
 };
-
-// Function to handle the "/add" command
 const handleAddCommand = (chatId) => {
   const task = { chatId };
   let step = 0;
@@ -190,8 +98,6 @@ const handleAddCommand = (chatId) => {
       step = 0;
       return;
     }
-
-    console.log("brotherOptions", brotherOptions);
 
     const currentStep = steps[step];
     if (currentStep.text === "Выбери дату:") {
@@ -261,8 +167,8 @@ const handleGetSchedule = (chatId) => {
   });
 };
 
-// Function to handle the "/add_bro" command
-// Function to handle the "/add_bro" command
+// const userData = {};
+
 const handleAddBroCommand = (chatId) => {
   const user = { chatId };
   let step = 0;
@@ -270,19 +176,25 @@ const handleAddBroCommand = (chatId) => {
   const steps = [
     { text: "Напиши имя и фамилию брата, которого хочешь добавить:" },
     {
-      text: "Напиши телеграм-ник брата используя вначале символ @, которого хочешь добавить:",
+      text: "Напиши телеграм-ник брата, используя вначале символ @, которого хочешь добавить:",
     },
     {
       text: "Напиши его возможности (в скобках):",
     },
   ];
 
-  const userAddStep = () => {ы
+  const userAddStep = () => {
     if (step >= steps.length) {
       if (user.name && user.nickname && user.role) {
-        getUser(user);
-        // Add logic to save the user to the database or perform any other desired action
-        bot.sendMessage(chatId, "Брат успешно добавлен в список.");
+        addUser(user)
+          .then((res) => {
+            console.log(res);
+            bot.sendMessage(chatId, "Брат успешно добавлен в список.");
+          })
+          .catch((error) => {
+            console.error(error);
+            bot.sendMessage(chatId, "Произошла ошибка при добавлении брата.");
+          });
         return;
       }
     }
@@ -292,8 +204,9 @@ const handleAddBroCommand = (chatId) => {
     step++;
   };
 
-  bot.on("message", (msg) => {
+  const handleMessage = (msg) => {
     const text = msg.text;
+    console.log("Text", text);
 
     switch (step - 1) {
       case 0:
@@ -301,71 +214,80 @@ const handleAddBroCommand = (chatId) => {
         break;
       case 1:
         user.nickname = text;
+        break;
       case 2:
         user.role = text;
         break;
     }
 
     userAddStep();
-  });
+  };
 
+  bot.on("message", handleMessage);
   userAddStep();
 };
 
-// Event listener for message commands
-bot.onText(/\/\w+/, (msg) => {
-  const chatId = msg.chat.id;
-  const command = msg.text;
+// Function to handle the "/add_bro" command
+const handleAddBrotherCommand = (chatId) => {
+  const user = { chatId };
+  let step = 0;
 
-  switch (command) {
-    case "/start":
-      bot.sendMessage(
-        chatId,
-        `Приветсвую дорогой брат ${msg.from.first_name}! Рад что ты присоединился к нам.`
-      );
-      break;
-    case "/info":
-      bot.sendMessage(
-        chatId,
-        `Брат ${msg.from.first_name}, эта группа была создана для теста, в будущем она будет помогать братьям организовывать важные части встреч собрания и других мероприятий`
-      );
-      break;
-    case "/listbrothers":
-      console.log(brotherList);
-      const brothers = brotherList
-        ?.map((item) => `${item.name} ${item.role}`)
-        .join("\n");
-      bot.sendMessage(chatId, `Вот список всех братьев:\n${brothers}`);
-      break;
-    case "/add":
-      handleAddCommand(chatId);
-      break;
-    case "/add_bro":
-      handleAddBroCommand(chatId);
-      break;
-    case "/list_schedule":
-      handleGetSchedule(chatId);
+  const steps = [
+    { text: "Напиши имя и фамилию брата, которого хочешь добавить:" },
+    {
+      text: "Напиши телеграм-ник брата, используя вначале символ @, которого хочешь добавить:",
+    },
+    {
+      text: "Напиши его возможности (в скобках):",
+    },
+  ];
 
-      break;
-    default:
-      break;
-  }
-});
+  const userAddStep = () => {
+    if (step >= steps.length) {
+      if (user.name && user.nickname && user.role) {
+        addUser(user)
+          .then((res) => {
+            console.log(res);
+            bot.sendMessage(chatId, "Брат успешно добавлен в список.");
+          })
+          .catch((error) => {
+            console.error(error);
+            bot.sendMessage(chatId, "Произошла ошибка при добавлении брата.");
+          });
+        return;
+      }
+    }
 
-// Set the bot commands
-bot.setMyCommands(commands);
+    const currentStep = steps[step];
+    bot.sendMessage(chatId, currentStep.text);
+    step++;
+  };
 
-// Connect to the database and start the bot
-const connectToDb = () => {
-  client
-    .connect()
-    .then(() => {
-      console.log("Connected to MongoDB");
-      console.log("Bot started");
-    })
-    .catch((err) => {
-      console.log("Error connecting to MongoDB:", err);
-    });
+  const handleMessage = (msg) => {
+    const text = msg.text;
+    console.log("Text", text);
+
+    switch (step - 1) {
+      case 0:
+        user.name = text;
+        break;
+      case 1:
+        user.nickname = text;
+        break;
+      case 2:
+        user.role = text;
+        break;
+    }
+
+    userAddStep();
+  };
+
+  bot.on("message", handleMessage);
+  userAddStep();
 };
 
-connectToDb();
+module.exports = {
+  handleAddCommand,
+  handleGetSchedule,
+  handleAddBroCommand,
+};
