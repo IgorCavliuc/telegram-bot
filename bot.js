@@ -28,8 +28,6 @@ app.post("/telegram-webhook", (req, res) => {
   res.json({ message: "Received" });
 });
 
-// Ваш код для обработки команд и взаимодействия с ботом
-
 const commands = [
   { command: "/start", description: "Начальное приветствие." },
   { command: "/help", description: "Информация о боте и его свойствах." },
