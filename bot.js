@@ -81,7 +81,6 @@ bot.help(async (ctx) => {
     (bro) => bro.nickname.split("@")[1] === ctx.from.username
   );
 
-<<<<<<< HEAD
   const steps = [
     { text: "Выбери дату:" },
     { text: "Выбери брата для службы в озвучке:" },
@@ -165,7 +164,9 @@ bot.help(async (ctx) => {
   bot.on("callback_query", handleCallbackQuery);
 
   processStep();
-};
+}
+)
+
 
 const handleGetSchedule = (chatId) => {
   bot.onText(/\/list_schedule/, async (msg) => {
@@ -284,17 +285,6 @@ bot.onText(/\/\w+/, (msg) => {
       break;
     default:
       break;
-=======
-  const root = {
-    auth: dataUser.length !== 0,
-    admin: dataUser[0]?.admin,
-  };
-
-  if (root.auth) {
-    handleHelpCommand(bot, ctx, root);
-  } else {
-    handleHelpCommand(bot, ctx, root, ctx.from.first_name);
->>>>>>> ece11a84961e16d4d241ddc0df5be6df27862245
   }
 });
 
