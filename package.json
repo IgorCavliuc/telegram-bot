@@ -5,7 +5,6 @@
   "main": "bot.js",
   "scripts": {
     "start": "env-cmd -f .env node bot.js",
-    // "start": "BOT_TOKEN=6180471150:AAECNhrvGQfnPQtbg6zWI7Qh2Qq52kvz3OQ node bot.js",
     "dev": "env-cmd -f .env nodemon  bot.js"
   },
   "author": "",
