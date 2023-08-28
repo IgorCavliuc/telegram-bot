@@ -70,7 +70,7 @@ bot.start(async (ctx) => {
   };
 
   ctx.reply(
-    `Привет ${ctx.from.first_name}! http://t.me/JWscheduleBot/JwScheduleBot`
+    `Привет брат ${ctx.from.first_name}! http://t.me/JWscheduleBot/JwScheduleBot`
   );
 });
 
