@@ -1,25 +1,43 @@
-const token = process.env.TOKEN;
-const moment = require("moment");
+require("dotenv").config();
+const { Telegraf } = require("telegraf");
+const {
+  handleAddCommand,
+  handleGetSchedule,
+  handleAddBroCommand,
+  handleGetBrother,
+  handleStartCommand,
+  handleHelpCommand,
+  handleAddCommandAdmin,
+  handleAddBroCommandAdmin,
+} = require("./comands.js");
+const { getUser, updateUser } = require("./db.js");
 
-const { MongoClient } = require("mongodb");
-const TelegramApi = require("node-telegram-bot-api");
+const token = process.env.TELEGRAN_BOT_TOKEN;
 
-const mongoUrl = process.env.MONGO_URL;
+const bot = new Telegraf(token);
 
-const dbName = process.env.DB_NAME;
+const express = require("express");
+const bodyParser = require("body-parser");
 
-const client = new MongoClient(mongoUrl);
-const bot = new TelegramApi(token, { polling: true });
+const app = express();
 
-// Command definitions
+app.use(bodyParser.json());
+
+app.post("/telegram-webhook", (req, res) => {
+  // Обработка запросов от Telegram бота
+  res.json({ message: "Received" });
+});
+
+// Ваш код для обработки команд и взаимодействия с ботом
+
 const commands = [
   { command: "/start", description: "Начальное приветствие." },
-  { command: "/info", description: "Информация о боте и его свойствах." },
+  { command: "/help", description: "Информация о боте и его свойствах." },
   {
-    command: "/listbrothers",
+    command: "/list_brothers",
     description: "Список братьев допущенных к обслуживанию.",
   },
-  { command: "/add", description: "Добавление чего-то." },
+  { command: "/add_task", description: "Добавление чего-то." },
   { command: "/add_bro", description: "Добавление нового брата в список." },
   {
     command: "/list_schedule",
@@ -27,126 +45,43 @@ const commands = [
   },
 ];
 
-// const dateOptions = {
-//   reply_markup: JSON.stringify({
-//     inline_keyboard: [
-//       [{ callback_data: "12.12", text: "12.12" }],
-//       [{ callback_data: "13.13", text: "13.13" }],
-//       [{ callback_data: "14.14", text: "14.14" }],
-//     ],
-//   }),
-// };
+bot.start(async (ctx) => {
+  const userId = ctx.from?.id;
+  const userName = "@" + ctx.from?.username;
 
-const generateMondayDates = () => {
-  const startDate = moment().startOf("isoWeek");
-  const endDate = moment().add(2, "months").endOf("isoWeek");
-
-  const dates = [];
-  let currentDate = startDate;
-
-  while (currentDate.isBefore(endDate)) {
-    const formattedDate = currentDate.format("DD.MM.YYYY");
-    dates.push([{ callback_data: formattedDate, text: formattedDate }]);
-    currentDate = currentDate.add(1, "week");
-  }
-
-  return dates;
-};
-
-const dateOptions = {
-  reply_markup: JSON.stringify({
-    inline_keyboard: generateMondayDates(),
-  }),
-};
-
-// Function to add a task to the database
-const addTask = async (task) => {
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection("scheduleJw");
-    await collection.insertOne(task);
-  } catch (error) {
-    console.log("Error adding task:", error);
-  } finally {
-    await client.close();
-  }
-};
-const getSchedule = async () => {
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection("scheduleJw");
-    const scheduleList = await collection.find().toArray();
-    return scheduleList;
-  } catch (error) {
-    console.log("Error retrieving schedule:", error);
-    return [];
-  } finally {
-    await client.close();
-  }
-};
-
-const getUser = async () => {
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection("user");
-    const scheduleList = await collection.find().toArray();
-    return scheduleList;
-  } catch (error) {
-    console.log("Error retrieving user:", error);
-    return [];
-  } finally {
-    await client.close();
-  }
-};
-
-let brotherList;
-
-getUser().then((res) => {
-  brotherList = res;
-});
-// Inline keyboard options for brother selection
-// const brotherList = [
-//   {
-//     callback_data: "@cavliman",
-//     text: "Cavliuc Igor",
-//     role: "Распорядитель, Микрофон",
-//   },
-//   { callback_data: "@bellylollipop", text: "Radionov Igor", role: "Микрофон" },
-//   {
-//     callback_data: "@your_pixel",
-//     text: "Fleanku Yaroslav",
-//     role: "Аппаратура, Микрофон",
-//   },
-//   {
-//     callback_data: "@rosin_rusanovschi",
-//     text: "Rusanivsci Rosin",
-//     role: "Распорядитель, Микрофон, Аппаратура",
-//   },
-// ];
-
-// Inline keyboard options for brother selection
-const getBrotherOptions = () => {
-  return {
-    reply_markup: JSON.stringify({
-      inline_keyboard: brotherList.map((brother) => [
-        {
-          callback_data: brother.name,
-          text: brother.nickname,
-          role: brother.role,
-        },
-      ]),
-    }),
+  const keyboard = {
+    reply_markup: {
+      keyboard: commands.map((command) => [{ text: command.command }]),
+      one_time_keyboard: true,
+    },
   };
-};
 
-// Function to handle the "/add" command
-const handleAddCommand = (chatId) => {
-  const task = { chatId };
-  let step = 0;
+  await updateUser(userName, userId);
 
+  const brotherList = await getUser();
+
+  const dataUser = brotherList.filter(
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
+  const root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
+  ctx.reply(
+    `Привет ${ctx.from.first_name}! http://t.me/JWscheduleBot/JwScheduleBot`
+  );
+});
+
+bot.help(async (ctx) => {
+  const brotherList = await getUser();
+
+  const dataUser = brotherList.filter(
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
+<<<<<<< HEAD
   const steps = [
     { text: "Выбери дату:" },
     { text: "Выбери брата для службы в озвучке:" },
@@ -349,23 +284,81 @@ bot.onText(/\/\w+/, (msg) => {
       break;
     default:
       break;
+=======
+  const root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
+  if (root.auth) {
+    handleHelpCommand(bot, ctx, root);
+  } else {
+    handleHelpCommand(bot, ctx, root, ctx.from.first_name);
+>>>>>>> ece11a84961e16d4d241ddc0df5be6df27862245
   }
 });
 
-// Set the bot commands
-bot.setMyCommands(commands);
+bot.command("add_task", (ctx) => {
+  handleAddCommand(bot, ctx);
+});
 
-// Connect to the database and start the bot
-const connectToDb = () => {
-  client
-    .connect()
-    .then(() => {
-      console.log("Connected to MongoDB");
-      console.log("Bot started");
-    })
-    .catch((err) => {
-      console.log("Error connecting to MongoDB:", err);
-    });
-};
+bot.command("add_bro", async (ctx) => {
+  const brotherList = await getUser();
 
-connectToDb();
+  const dataUser = brotherList.filter(
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
+  const root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
+  handleAddBroCommandAdmin(bot, ctx, root, ctx.from.first_name);
+});
+
+bot.command("list_schedule", async (ctx) => {
+  const brotherList = await getUser();
+
+  const dataUser = brotherList.filter(
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
+  const root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
+  if (root.auth) {
+    handleGetSchedule(bot, ctx);
+  } else {
+    ctx.reply(
+      `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
+    );
+  }
+});
+
+bot.command("list_brothers", async (ctx) => {
+  const brotherList = await getUser();
+
+  const dataUser = brotherList.filter(
+    (bro) => bro.nickname.split("@")[1] === ctx.from.username
+  );
+
+  const root = {
+    auth: dataUser.length !== 0,
+    admin: dataUser[0]?.admin,
+  };
+
+  if (root.auth) {
+    handleGetBrother(bot, ctx);
+  } else {
+    ctx.reply(
+      `${ctx.from.first_name}, у тебя нет доступа к этой команде, если ты хочешь просмотреть данные этой команды, пожалуйста обратись к назначеному брату`
+    );
+  }
+});
+
+bot.launch().then(() => {
+  console.log("Bot started");
+});
