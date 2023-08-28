@@ -28,11 +28,6 @@ app.post("/telegram-webhook", (req, res) => {
   res.json({ message: "Received" });
 });
 
-// Запуск Express.js сервера
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Express server is listening...");
-});
-
 // Ваш код для обработки команд и взаимодействия с ботом
 
 const commands = [
