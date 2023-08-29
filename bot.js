@@ -30,9 +30,6 @@ bot.setWebHook(webhookURL);
 
 app.post(`/webhook/${token}`, (req, res) => {
   const { message } = req.body;
-  // Handle the incoming message
-  // You can use bot.sendMessage() to send a reply
-  // Example: bot.sendMessage(message.chat.id, 'Hello from your bot!');
   res.sendStatus(200);
 });
 

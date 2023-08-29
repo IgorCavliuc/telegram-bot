@@ -1,0 +1,9 @@
+{
+    "routes": [
+      {
+        "src": "/webhook/:token",
+        "dest": "/webhook/:token"
+      }
+    ]
+  }
+  
