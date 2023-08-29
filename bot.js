@@ -24,6 +24,10 @@ const commands = [
   },
 ];
 
+const webhookURL =
+  "https://telegram-bot.vercel.app/webhook/6180471150:AAECNhrvGQfnPQtbg6zWI7Qh2Qq52kvz3OQ";
+bot.setWebHook(webhookURL);
+
 app.post(`/webhook/${token}`, (req, res) => {
   const { message } = req.body;
   // Handle the incoming message
