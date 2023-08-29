@@ -1,6 +1,10 @@
-const { Telegraf, Markup } = require("telegraf");
+const TelegramBot = require("node-telegram-bot-api");
+const express = require("express");
+const app = express();
+app.use(express.json());
 
-const bot = new Telegraf("6180471150:AAECNhrvGQfnPQtbg6zWI7Qh2Qq52kvz3OQ");
+const token = process.env.TELEGRAN_BOT_TOKEN;
+const bot = new TelegramBot(token, { polling: true });
 
 const {
   handleAddCommand,
@@ -24,8 +28,7 @@ const commands = [
   },
 ];
 
-const webhookURL =
-  "https://telegram-bot.vercel.app/webhook/6180471150:AAECNhrvGQfnPQtbg6zWI7Qh2Qq52kvz3OQ";
+const webhookURL = `https://telegram-bot.vercel.app/webhook/${token}`;
 bot.setWebHook(webhookURL);
 
 app.post(`/webhook/${token}`, (req, res) => {
@@ -33,31 +36,47 @@ app.post(`/webhook/${token}`, (req, res) => {
   res.sendStatus(200);
 });
 
-bot.start((ctx) => {
-  ctx.reply(`Добро пожаловать, брат ${ctx.from.first_name}`);
+bot.on("text", (msg) => {
+  const chatId = msg.chat.id;
+  const text = msg.text;
+
+  if (text === "/start") {
+    bot.sendMessage(
+      chatId,
+      `Добро пожаловать, брат ${msg.from.first_name} t.me/JwScheduleBot/JwScheduleBot. `
+    );
+  }
 });
 
-bot.help((ctx) => {
-  ctx.reply(
-    `Брат ${ctx.from.first_name}, эта группа была создана для теста. В будущем она будет помогать братьям организовывать важные части встреч, собрания и других мероприятий.`
-  );
-});
+// // Help command handler
+// bot.command("help", (ctx) => {
+//   ctx.reply(
+//     `Брат ${ctx.from.first_name}, эта группа была создана для теста. В будущем она будет помогать братьям организовывать важные части встреч, собрания и других мероприятий.`
+//   );
+// });
 
-bot.command("add_task", (ctx) => {
-  handleAddCommand(bot, ctx);
-});
+// // Custom command handlers
+// bot.command("add_task", (ctx) => {
+//   handleAddCommand(bot, ctx);
+// });
 
-bot.command("add_bro", (ctx) => {
-  handleAddBroCommand(bot, ctx);
-});
-bot.command("list_schedule", (ctx) => {
-  handleGetSchedule(bot, ctx);
-});
-bot.command("list_brothers", (ctx) => {
-  handleGetBrother(bot, ctx);
-});
+// bot.command("add_bro", (ctx) => {
+//   handleAddBroCommand(bot, ctx);
+// });
 
-bot.launch().then(() => {
+// bot.command("list_schedule", (ctx) => {
+//   handleGetSchedule(bot, ctx);
+// });
+
+// bot.command("list_brothers", (ctx) => {
+//   handleGetBrother(bot, ctx);
+// });
+
+// Start the bot
+// Start the bot by initiating polling
+bot.startPolling().then(() => {
   console.log("Bot started");
-  bot.telegram.setMyCommands(commands);
+
+  // Set bot commands
+  bot.setMyCommands(commands);
 });

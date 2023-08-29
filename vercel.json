@@ -4,6 +4,9 @@
         "src": "/webhook/:token",
         "dest": "/webhook/:token"
       }
-    ]
+    ],
+    "headers": [
+        { "source": "/webhook/:token", "headers": [{ "key": "Content-Type", "value": "application/json" }] }
+      ]
   }
   
